@@ -37,7 +37,15 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Kiwi version: $VERSION"
 
+      - name: Cache KiwiJava JAR
+        id: cache-kiwi-jar
+        uses: actions/cache@v4
+        with:
+          path: libs
+          key: kiwi-jar-mac-arm64-${{ steps.kiwi-release.outputs.version }}
+
       - name: Download KiwiJava JAR (macOS arm64)
+        if: steps.cache-kiwi-jar.outputs.cache-hit != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -48,7 +56,15 @@ jobs:
           curl -L -o libs/$(basename "$DOWNLOAD_URL") "$DOWNLOAD_URL"
           ls -la libs/
 
+      - name: Cache Kiwi model
+        id: cache-kiwi-model
+        uses: actions/cache@v4
+        with:
+          path: kiwi
+          key: kiwi-model-base-${{ steps.kiwi-release.outputs.version }}
+
       - name: Download Kiwi model
+        if: steps.cache-kiwi-model.outputs.cache-hit != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -131,7 +147,15 @@ jobs:
           VERSION=$(echo "$RELEASE_INFO" | jq -r '.tag_name' | sed 's/^v//')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
+      - name: Cache KiwiJava JAR
+        id: cache-kiwi-jar
+        uses: actions/cache@v4
+        with:
+          path: libs
+          key: kiwi-jar-${{ matrix.jar-platform }}-${{ steps.kiwi-release.outputs.version }}
+
       - name: Download KiwiJava JAR
+        if: steps.cache-kiwi-jar.outputs.cache-hit != 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
