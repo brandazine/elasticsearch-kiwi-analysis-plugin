@@ -8,8 +8,17 @@ plugins {
 group = "com.brandazine"
 version = "1.0.0-SNAPSHOT"
 
-val elasticsearchVersion = "8.12.0"
-val luceneVersion = "9.9.1"
+// ES version can be overridden via -Pes.version=9.2.2 or ES_VERSION env var
+val elasticsearchVersion: String = (project.findProperty("es.version") as String?)
+    ?: System.getenv("ES_VERSION")
+    ?: "8.12.0"
+
+// Lucene version mapping
+val luceneVersion = when {
+    elasticsearchVersion.startsWith("9.") -> "10.1.0"
+    elasticsearchVersion.startsWith("8.") -> "9.9.1"
+    else -> "9.9.1"
+}
 
 repositories {
     mavenCentral()
@@ -60,14 +69,18 @@ dependencies {
     testImplementation("org.apache.lucene:lucene-test-framework:$luceneVersion")
 }
 
+// Java version based on ES version (ES 9.x requires Java 21)
+val javaVersion = if (elasticsearchVersion.startsWith("9.")) JavaVersion.VERSION_21 else JavaVersion.VERSION_17
+val jvmTargetVersion = if (elasticsearchVersion.startsWith("9.")) "21" else "17"
+
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = javaVersion
+    targetCompatibility = javaVersion
 }
 
 tasks.withType<KotlinCompile> {
     kotlinOptions {
-        jvmTarget = "17"
+        jvmTarget = jvmTargetVersion
         freeCompilerArgs = listOf("-Xjsr305=strict")
     }
 }
@@ -89,7 +102,7 @@ tasks.register("createPluginDescriptor") {
             version=${project.version}
             name=analysis-kiwi
             classname=com.brandazine.elasticsearch.analysis.kiwi.KiwiAnalysisPlugin
-            java.version=17
+            java.version=$jvmTargetVersion
             elasticsearch.version=$elasticsearchVersion
             extended.plugins=
             has.native.controller=false
@@ -102,6 +115,7 @@ tasks.register<Zip>("bundlePlugin") {
     dependsOn("jar", "createPluginDescriptor")
 
     archiveBaseName.set("analysis-kiwi")
+    archiveVersion.set("${project.version}-es${elasticsearchVersion}")
     archiveClassifier.set(detectPlatform())
 
     from(tasks.jar) {
