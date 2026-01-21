@@ -7,15 +7,15 @@ Elasticsearch 한국어 형태소 분석 플러그인. [Kiwi](https://github.com
 - **고성능 형태소 분석**: Kiwi 라이브러리 기반 빠른 처리
 - **사용자 정의 사전**: 커스텀 단어/품사 추가 지원
 - **품사 필터링**: 특정 품사만 포함하거나 제외
-- **멀티 플랫폼**: Linux, macOS (Intel/Apple Silicon), Windows 지원
-- **Elasticsearch 8.12+ 호환**: Stable Plugin API 사용
+- **멀티 플랫폼**: Linux, macOS, Windows 지원
+- **Elasticsearch 8.x / 9.x 호환**: Stable Plugin API 사용
 
 ## Installation
 
 ### 1. Prerequisites
 
-- Elasticsearch 8.12.0+
-- Java 17+
+- Elasticsearch 8.x 또는 9.x
+- Java 17+ (ES 8.x) 또는 Java 21+ (ES 9.x)
 - `curl`, `jq`, `tar` (for setup)
 
 ### 2. Build the Plugin
@@ -28,11 +28,14 @@ cd kiwi-analyzer
 # Setup (downloads KiwiJava and model files)
 make setup
 
-# Build plugin
+# Build plugin (default: ES 8.12.0)
 make build
+
+# Build for ES 9.x
+ES_VERSION=9.2.2 ./gradlew bundlePlugin
 ```
 
-빌드 결과물: `build/distributions/analysis-kiwi-1.0.0-SNAPSHOT-{platform}.zip`
+빌드 결과물: `build/distributions/analysis-kiwi-1.0.0-SNAPSHOT-es{version}-{platform}.zip`
 
 ### 3. Install to Elasticsearch
 
@@ -245,7 +248,7 @@ POST /_analyze
 
 ### Requirements
 
-- JDK 17+
+- JDK 17+ (ES 8.x) 또는 JDK 21+ (ES 9.x)
 - Gradle 8.x (wrapper included)
 - `make`, `curl`, `jq`
 

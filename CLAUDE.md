@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Korean morphological analysis plugin for Elasticsearch using [Kiwi](https://github.com/bab2min/Kiwi) library. Written in Kotlin, targeting Elasticsearch 8.12+ stable plugin API.
+Korean morphological analysis plugin for Elasticsearch using [Kiwi](https://github.com/bab2min/Kiwi) library. Written in Kotlin, supporting Elasticsearch 8.x and 9.x.
 
 ## Quick Commands
 
@@ -13,8 +13,11 @@ make setup
 # Run tests
 make test
 
-# Build plugin
+# Build plugin (default: ES 8.12.0)
 make build
+
+# Build for specific ES version
+ES_VERSION=9.2.2 ./gradlew bundlePlugin
 
 # Clean
 make clean
@@ -102,7 +105,11 @@ KIWI_MODEL_PATH=$(pwd)/kiwi/base ./gradlew test
 
 ## Build Output
 
-Plugin ZIP: `build/distributions/analysis-kiwi-1.0.0-SNAPSHOT-{platform}.zip`
+Plugin ZIP: `build/distributions/analysis-kiwi-1.0.0-SNAPSHOT-es{version}-{platform}.zip`
+
+Examples:
+- `analysis-kiwi-1.0.0-SNAPSHOT-es8.12.0-lnx-x86-64.zip`
+- `analysis-kiwi-1.0.0-SNAPSHOT-es9.2.2-lnx-x86-64.zip`
 
 Platforms: `lnx-x86-64`, `lnx-aarch64`, `mac-arm64`, `win-x64`
 
@@ -115,8 +122,10 @@ Platforms: `lnx-x86-64`, `lnx-aarch64`, `mac-arm64`, `win-x64`
 
 ## Dependencies
 
-- Elasticsearch 8.12.0 plugin API (compileOnly)
-- Lucene 9.9.1 (compileOnly)
+| ES Version | Java | Lucene |
+|------------|------|--------|
+| 8.x | 17 | 9.9.1 |
+| 9.x | 21 | 10.1.0 |
+
 - KiwiJava (runtime, platform-specific)
 - Kotlin 1.9.22
-- Java 17
