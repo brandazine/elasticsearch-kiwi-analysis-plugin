@@ -67,6 +67,8 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
     testImplementation("org.apache.lucene:lucene-analysis-common:$luceneVersion")
     testImplementation("org.apache.lucene:lucene-test-framework:$luceneVersion")
+    testImplementation("org.elasticsearch.plugin:elasticsearch-plugin-api:$elasticsearchVersion")
+    testImplementation("org.elasticsearch.plugin:elasticsearch-plugin-analysis-api:$elasticsearchVersion")
 }
 
 // Java version based on ES version (ES 9.x requires Java 21)
@@ -89,23 +91,38 @@ tasks.test {
     useJUnitPlatform()
 }
 
-// Create plugin descriptor
+// Create stable plugin descriptor (no classname for stable plugins)
 tasks.register("createPluginDescriptor") {
-    val outputFile = layout.buildDirectory.file("plugin-descriptor.properties")
-    outputs.file(outputFile)
+    val descriptorFile = layout.buildDirectory.file("stable-plugin-descriptor.properties")
+    val namedComponentsFile = layout.buildDirectory.file("named_components.json")
+    outputs.files(descriptorFile, namedComponentsFile)
 
     doLast {
-        val descriptor = outputFile.get().asFile
+        // Stable plugin descriptor
+        val descriptor = descriptorFile.get().asFile
         descriptor.parentFile.mkdirs()
         descriptor.writeText("""
             description=Korean morphological analysis plugin using Kiwi
             version=${project.version}
             name=analysis-kiwi
-            classname=com.brandazine.elasticsearch.analysis.kiwi.KiwiAnalysisPlugin
             java.version=$jvmTargetVersion
             elasticsearch.version=$elasticsearchVersion
-            extended.plugins=
-            has.native.controller=false
+        """.trimIndent())
+
+        // Named components mapping
+        val namedComponents = namedComponentsFile.get().asFile
+        namedComponents.writeText("""
+            {
+              "org.elasticsearch.plugin.analysis.TokenizerFactory": {
+                "kiwi": "com.brandazine.elasticsearch.analysis.kiwi.KiwiTokenizerFactory"
+              },
+              "org.elasticsearch.plugin.analysis.TokenFilterFactory": {
+                "kiwi_part_of_speech": "com.brandazine.elasticsearch.analysis.kiwi.KiwiPartOfSpeechFilterFactory"
+              },
+              "org.elasticsearch.plugin.analysis.AnalyzerFactory": {
+                "kiwi": "com.brandazine.elasticsearch.analysis.kiwi.KiwiAnalyzerFactory"
+              }
+            }
         """.trimIndent())
     }
 }
@@ -121,7 +138,10 @@ tasks.register<Zip>("bundlePlugin") {
     from(tasks.jar) {
         into("")
     }
-    from(layout.buildDirectory.file("plugin-descriptor.properties")) {
+    from(layout.buildDirectory.file("stable-plugin-descriptor.properties")) {
+        into("")
+    }
+    from(layout.buildDirectory.file("named_components.json")) {
         into("")
     }
     from(configurations.runtimeClasspath) {
