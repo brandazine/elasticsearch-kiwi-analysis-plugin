@@ -146,6 +146,5 @@ tasks.register<Zip>("bundlePlugin") {
     }
     from(configurations.runtimeClasspath) {
         into("")
-        exclude("kotlin-stdlib*.jar") // ES provides Kotlin runtime
     }
 }
