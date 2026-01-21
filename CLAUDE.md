@@ -104,7 +104,7 @@ KIWI_MODEL_PATH=$(pwd)/kiwi/base ./gradlew test
 
 Plugin ZIP: `build/distributions/analysis-kiwi-1.0.0-SNAPSHOT-{platform}.zip`
 
-Platforms: `lnx-x86-64`, `lnx-aarch64`, `mac-x86_64`, `mac-arm64`, `win-x64`
+Platforms: `lnx-x86-64`, `lnx-aarch64`, `mac-arm64`, `win-x64`
 
 ## ES Stable Plugin API Notes
 

@@ -282,7 +282,6 @@ make download-version VERSION=v0.22.2
 |----------|------------|----------------|
 | Linux x64 | `lnx-x86-64` | `analysis-kiwi-*-lnx-x86-64.zip` |
 | Linux ARM64 | `lnx-aarch64` | `analysis-kiwi-*-lnx-aarch64.zip` |
-| macOS Intel | `mac-x86_64` | `analysis-kiwi-*-mac-x86_64.zip` |
 | macOS Apple Silicon | `mac-arm64` | `analysis-kiwi-*-mac-arm64.zip` |
 | Windows x64 | `win-x64` | `analysis-kiwi-*-win-x64.zip` |
 
