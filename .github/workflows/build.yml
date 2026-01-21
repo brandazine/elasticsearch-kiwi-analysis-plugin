@@ -29,25 +29,31 @@ jobs:
 
       - name: Get latest Kiwi release info
         id: kiwi-release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          RELEASE_INFO=$(curl -s https://api.github.com/repos/bab2min/Kiwi/releases/latest)
+          RELEASE_INFO=$(gh api repos/bab2min/Kiwi/releases/latest)
           VERSION=$(echo "$RELEASE_INFO" | jq -r '.tag_name' | sed 's/^v//')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Kiwi version: $VERSION"
 
       - name: Download KiwiJava JAR (macOS arm64)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p libs
-          DOWNLOAD_URL=$(curl -s https://api.github.com/repos/bab2min/Kiwi/releases/latest | \
+          DOWNLOAD_URL=$(gh api repos/bab2min/Kiwi/releases/latest | \
             jq -r '.assets[] | select(.name | contains("kiwi-java") and contains("mac-arm64")) | .browser_download_url')
           echo "Downloading: $DOWNLOAD_URL"
           curl -L -o libs/$(basename "$DOWNLOAD_URL") "$DOWNLOAD_URL"
           ls -la libs/
 
       - name: Download Kiwi model
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p kiwi
-          DOWNLOAD_URL=$(curl -s https://api.github.com/repos/bab2min/Kiwi/releases/latest | \
+          DOWNLOAD_URL=$(gh api repos/bab2min/Kiwi/releases/latest | \
             jq -r '.assets[] | select(.name | contains("kiwi_model") and contains("base.tgz")) | .browser_download_url')
           echo "Downloading model: $DOWNLOAD_URL"
           curl -L -o /tmp/model.tgz "$DOWNLOAD_URL"
@@ -118,16 +124,20 @@ jobs:
       - name: Get latest Kiwi release info
         id: kiwi-release
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          RELEASE_INFO=$(curl -s https://api.github.com/repos/bab2min/Kiwi/releases/latest)
+          RELEASE_INFO=$(gh api repos/bab2min/Kiwi/releases/latest)
           VERSION=$(echo "$RELEASE_INFO" | jq -r '.tag_name' | sed 's/^v//')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Download KiwiJava JAR
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p libs
-          DOWNLOAD_URL=$(curl -s https://api.github.com/repos/bab2min/Kiwi/releases/latest | \
+          DOWNLOAD_URL=$(gh api repos/bab2min/Kiwi/releases/latest | \
             jq -r '.assets[] | select(.name | contains("kiwi-java") and contains("${{ matrix.jar-platform }}")) | .browser_download_url')
           echo "Downloading: $DOWNLOAD_URL"
           curl -L -o libs/$(basename "$DOWNLOAD_URL") "$DOWNLOAD_URL"
