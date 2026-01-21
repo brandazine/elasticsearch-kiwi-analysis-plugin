@@ -1,5 +1,5 @@
 ALL-UNNAMED:
-  - native
+  - load_native_libraries
   - files:
       - path: "<<TEMP>>"
         mode: read_write
