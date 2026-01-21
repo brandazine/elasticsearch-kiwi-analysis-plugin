@@ -1,0 +1,195 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  JAVA_VERSION: '17'
+  GRADLE_OPTS: '-Dorg.gradle.daemon=false'
+
+jobs:
+  test:
+    name: Test
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Get latest Kiwi release info
+        id: kiwi-release
+        run: |
+          RELEASE_INFO=$(curl -s https://api.github.com/repos/bab2min/Kiwi/releases/latest)
+          VERSION=$(echo "$RELEASE_INFO" | jq -r '.tag_name' | sed 's/^v//')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Kiwi version: $VERSION"
+
+      - name: Download KiwiJava JAR (macOS arm64)
+        run: |
+          mkdir -p libs
+          DOWNLOAD_URL=$(curl -s https://api.github.com/repos/bab2min/Kiwi/releases/latest | \
+            jq -r '.assets[] | select(.name | contains("kiwi-java") and contains("mac-arm64")) | .browser_download_url')
+          echo "Downloading: $DOWNLOAD_URL"
+          curl -L -o libs/$(basename "$DOWNLOAD_URL") "$DOWNLOAD_URL"
+          ls -la libs/
+
+      - name: Download Kiwi model
+        run: |
+          mkdir -p kiwi
+          DOWNLOAD_URL=$(curl -s https://api.github.com/repos/bab2min/Kiwi/releases/latest | \
+            jq -r '.assets[] | select(.name | contains("kiwi_model") and contains("base.tgz")) | .browser_download_url')
+          echo "Downloading model: $DOWNLOAD_URL"
+          curl -L -o /tmp/model.tgz "$DOWNLOAD_URL"
+          tar -xzf /tmp/model.tgz -C kiwi
+
+      - name: Update build.gradle.kts version
+        run: |
+          VERSION=${{ steps.kiwi-release.outputs.version }}
+          sed -i '' "s/val kiwiJavaVersion = \"[^\"]*\"/val kiwiJavaVersion = \"$VERSION\"/" build.gradle.kts
+
+      - name: Find model path
+        id: model-path
+        run: |
+          MODEL_PATH=$(find kiwi -name "*.knlm" -o -name "*.morph" 2>/dev/null | head -1 | xargs dirname)
+          echo "path=$MODEL_PATH" >> $GITHUB_OUTPUT
+          echo "Model path: $MODEL_PATH"
+
+      - name: Run tests
+        env:
+          KIWI_MODEL_PATH: ${{ steps.model-path.outputs.path }}
+        run: ./gradlew test
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: build/reports/tests/
+          retention-days: 7
+
+  build:
+    name: Build (${{ matrix.platform }})
+    needs: test
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: lnx-x86-64
+            runs-on: ubuntu-latest
+            jar-platform: lnx-x86-64
+          - platform: lnx-aarch64
+            runs-on: ubuntu-latest
+            jar-platform: lnx-aarch64
+          - platform: mac-x86_64
+            runs-on: macos-13
+            jar-platform: mac-x86_64
+          - platform: mac-arm64
+            runs-on: macos-latest
+            jar-platform: mac-arm64
+          - platform: win-x64
+            runs-on: windows-latest
+            jar-platform: win-x64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Get latest Kiwi release info
+        id: kiwi-release
+        shell: bash
+        run: |
+          RELEASE_INFO=$(curl -s https://api.github.com/repos/bab2min/Kiwi/releases/latest)
+          VERSION=$(echo "$RELEASE_INFO" | jq -r '.tag_name' | sed 's/^v//')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Download KiwiJava JAR
+        shell: bash
+        run: |
+          mkdir -p libs
+          DOWNLOAD_URL=$(curl -s https://api.github.com/repos/bab2min/Kiwi/releases/latest | \
+            jq -r '.assets[] | select(.name | contains("kiwi-java") and contains("${{ matrix.jar-platform }}")) | .browser_download_url')
+          echo "Downloading: $DOWNLOAD_URL"
+          curl -L -o libs/$(basename "$DOWNLOAD_URL") "$DOWNLOAD_URL"
+
+      - name: Update build.gradle.kts version (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          VERSION=${{ steps.kiwi-release.outputs.version }}
+          sed -i.bak "s/val kiwiJavaVersion = \"[^\"]*\"/val kiwiJavaVersion = \"$VERSION\"/" build.gradle.kts
+
+      - name: Update build.gradle.kts version (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $version = "${{ steps.kiwi-release.outputs.version }}"
+          (Get-Content build.gradle.kts) -replace 'val kiwiJavaVersion = "[^"]*"', "val kiwiJavaVersion = `"$version`"" | Set-Content build.gradle.kts
+
+      - name: Build plugin
+        run: ./gradlew jar bundlePlugin -x test
+
+      - name: List build outputs
+        shell: bash
+        run: ls -la build/distributions/
+
+      - name: Upload plugin artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: analysis-kiwi-${{ matrix.platform }}
+          path: build/distributions/*.zip
+          retention-days: 30
+
+  release:
+    name: Create Release
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: analysis-kiwi-*
+          merge-multiple: false
+
+      - name: List artifacts
+        run: find artifacts -type f -name "*.zip"
+
+      - name: Get version from artifact
+        id: version
+        run: |
+          ZIP_FILE=$(find artifacts -name "*.zip" | head -1)
+          VERSION=$(basename "$ZIP_FILE" | sed -E 's/analysis-kiwi-([^-]+(-SNAPSHOT)?).*/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      # Uncomment to enable automatic releases
+      # - name: Create Release
+      #   uses: softprops/action-gh-release@v1
+      #   with:
+      #     tag_name: v${{ steps.version.outputs.version }}
+      #     name: Release ${{ steps.version.outputs.version }}
+      #     draft: true
+      #     files: artifacts/**/*.zip
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

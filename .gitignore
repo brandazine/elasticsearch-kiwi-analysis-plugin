@@ -1,0 +1,34 @@
+# Gradle
+.gradle/
+build/
+gradle-app.setting
+!gradle-wrapper.jar
+.gradletasknamecache
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+*.swp
+*~
+
+# Kotlin
+*.class
+
+# OS
+.DS_Store
+Thumbs.db
+
+# KiwiJava JARs (download separately)
+libs/*.jar
+
+# Kiwi model files (download separately)
+/kiwi/
+*.tgz
+
+# Test output
+test-output/
