@@ -1,0 +1,7 @@
+ALL-UNNAMED:
+  - native
+  - files:
+      - path: "<<TEMP>>"
+        mode: read_write
+      - path: "<<CONFIG>>"
+        mode: read

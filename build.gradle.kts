@@ -144,6 +144,9 @@ tasks.register<Zip>("bundlePlugin") {
     from(layout.buildDirectory.file("named_components.json")) {
         into("")
     }
+    from("src/main/plugin-metadata") {
+        into("")
+    }
     from(configurations.runtimeClasspath) {
         into("")
     }
