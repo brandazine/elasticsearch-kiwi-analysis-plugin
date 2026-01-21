@@ -15,6 +15,7 @@ on:
       - 'LICENSE'
       - '.gitignore'
       - 'docs/**'
+  workflow_dispatch:
 
 env:
   JAVA_VERSION: '17'
@@ -118,19 +119,16 @@ jobs:
       fail-fast: false
       matrix:
         es-version: ['8.12.0', '9.2.2']
+        platform: [lnx-x86-64, lnx-aarch64, mac-arm64, win-x64]
         include:
           - platform: lnx-x86-64
             runs-on: ubuntu-latest
-            jar-platform: lnx-x86-64
           - platform: lnx-aarch64
             runs-on: ubuntu-latest
-            jar-platform: lnx-aarch64
           - platform: mac-arm64
             runs-on: macos-latest
-            jar-platform: mac-arm64
           - platform: win-x64
             runs-on: windows-latest
-            jar-platform: win-x64
 
     steps:
       - name: Checkout
@@ -160,7 +158,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: libs
-          key: kiwi-jar-${{ matrix.jar-platform }}-${{ steps.kiwi-release.outputs.version }}
+          key: kiwi-jar-${{ matrix.platform }}-${{ steps.kiwi-release.outputs.version }}
 
       - name: Download KiwiJava JAR
         if: steps.cache-kiwi-jar.outputs.cache-hit != 'true'
@@ -170,7 +168,7 @@ jobs:
         run: |
           mkdir -p libs
           DOWNLOAD_URL=$(gh api repos/bab2min/Kiwi/releases/latest | \
-            jq -r '.assets[] | select(.name | contains("kiwi-java") and contains("${{ matrix.jar-platform }}")) | .browser_download_url')
+            jq -r '.assets[] | select(.name | contains("kiwi-java") and contains("${{ matrix.platform }}")) | .browser_download_url')
           echo "Downloading: $DOWNLOAD_URL"
           curl -L -o libs/$(basename "$DOWNLOAD_URL") "$DOWNLOAD_URL"
 
@@ -189,7 +187,7 @@ jobs:
 
       - name: Build plugin
         env:
-          KIWI_PLATFORM: ${{ matrix.jar-platform }}
+          KIWI_PLATFORM: ${{ matrix.platform }}
           ES_VERSION: ${{ matrix.es-version }}
         run: ./gradlew jar bundlePlugin -x test
 
