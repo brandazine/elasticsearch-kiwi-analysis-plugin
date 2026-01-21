@@ -18,7 +18,17 @@ repositories {
 val kiwiJavaVersion = "0.22.2"
 
 // Platform detection for KiwiJava JAR selection
+// Can be overridden via -Pkiwi.platform=xxx or KIWI_PLATFORM env var
 fun detectPlatform(): String {
+    // Check Gradle property first (e.g., -Pkiwi.platform=lnx-aarch64)
+    val propPlatform = project.findProperty("kiwi.platform") as String?
+    if (!propPlatform.isNullOrBlank()) return propPlatform
+
+    // Check environment variable (e.g., KIWI_PLATFORM=lnx-aarch64)
+    val envPlatform = System.getenv("KIWI_PLATFORM")
+    if (!envPlatform.isNullOrBlank()) return envPlatform
+
+    // Auto-detect from system
     val os = System.getProperty("os.name").lowercase()
     val arch = System.getProperty("os.arch").lowercase()
     return when {

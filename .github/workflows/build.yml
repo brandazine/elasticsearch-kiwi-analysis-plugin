@@ -114,9 +114,6 @@ jobs:
           - platform: lnx-aarch64
             runs-on: ubuntu-latest
             jar-platform: lnx-aarch64
-          - platform: mac-x86_64
-            runs-on: macos-13
-            jar-platform: mac-x86_64
           - platform: mac-arm64
             runs-on: macos-latest
             jar-platform: mac-arm64
@@ -180,6 +177,8 @@ jobs:
           (Get-Content build.gradle.kts) -replace 'val kiwiJavaVersion = "[^"]*"', "val kiwiJavaVersion = `"$version`"" | Set-Content build.gradle.kts
 
       - name: Build plugin
+        env:
+          KIWI_PLATFORM: ${{ matrix.jar-platform }}
         run: ./gradlew jar bundlePlugin -x test
 
       - name: List build outputs
