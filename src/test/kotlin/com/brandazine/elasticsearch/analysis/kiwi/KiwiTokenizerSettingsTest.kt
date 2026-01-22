@@ -7,10 +7,8 @@ import kotlin.test.assertTrue
 /**
  * Unit tests for POSTagSet-based settings defaults.
  *
- * Note: The actual settings interfaces (KiwiTokenizerSettings, etc.) are
- * annotated with @AnalysisSettings and are instantiated by Elasticsearch
- * via dynamic proxy. These tests verify the POSTagSet defaults used
- * when settings are empty.
+ * These tests verify the POSTagSet defaults used when settings are empty.
+ * Settings are parsed manually from ES Settings object in the factory classes.
  */
 class KiwiSettingsDefaultsTest {
 

@@ -1,0 +1,28 @@
+# Test Dockerfile for Kiwi Analyzer Plugin
+# Usage:
+#   # Build for ES 8.x
+#   docker build --build-arg ES_VERSION=8.12.0 -f Dockerfile.test -t kiwi-es8-test .
+#   docker run -d --name kiwi-es8 -e "discovery.type=single-node" -e "xpack.security.enabled=false" -p 9200:9200 kiwi-es8-test
+#
+#   # Build for ES 9.x
+#   docker build --build-arg ES_VERSION=9.0.0 -f Dockerfile.test -t kiwi-es9-test .
+#   docker run -d --name kiwi-es9 -e "discovery.type=single-node" -e "xpack.security.enabled=false" -p 9201:9200 kiwi-es9-test
+
+ARG ES_VERSION=8.12.0
+FROM docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION}
+
+ARG ES_VERSION
+
+# Copy plugin ZIP (built for linux x86-64)
+COPY build/distributions/analysis-kiwi-*-es${ES_VERSION}-lnx-x86-64.zip /tmp/analysis-kiwi.zip
+
+# Install plugin
+RUN elasticsearch-plugin install --batch file:///tmp/analysis-kiwi.zip
+
+# Copy Kiwi model files to config directory
+COPY kiwi/models/cong/base/ /usr/share/elasticsearch/config/kiwi/
+
+# Set proper permissions
+USER root
+RUN chown -R elasticsearch:elasticsearch /usr/share/elasticsearch/config/kiwi
+USER elasticsearch

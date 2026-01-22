@@ -1,17 +1,17 @@
 package com.brandazine.elasticsearch.analysis.kiwi
 
-import kr.pe.bab2min.Kiwi
-import org.apache.lucene.analysis.Analyzer
-import org.elasticsearch.plugin.Inject
-import org.elasticsearch.plugin.NamedComponent
-import org.elasticsearch.plugin.analysis.AnalyzerFactory
+import org.elasticsearch.common.settings.Settings
+import org.elasticsearch.env.Environment
+import org.elasticsearch.index.IndexSettings
+import org.elasticsearch.index.analysis.AnalyzerProvider
+import org.elasticsearch.index.analysis.AnalyzerScope
 
 /**
- * Factory for creating KiwiAnalyzer instances.
+ * Provider for creating KiwiAnalyzer instances.
  *
- * This factory is registered with Elasticsearch via the @NamedComponent annotation.
+ * This provider is registered with Elasticsearch via the classic plugin API.
  * When an index configuration specifies `"type": "kiwi"` for an analyzer,
- * Elasticsearch will use this factory to create analyzer instances.
+ * Elasticsearch will use this provider to create analyzer instances.
  *
  * The KiwiAnalyzer combines:
  * - Kiwi tokenizer for morphological analysis
@@ -36,28 +36,35 @@ import org.elasticsearch.plugin.analysis.AnalyzerFactory
  * }
  * ```
  */
-@NamedComponent("kiwi")
-class KiwiAnalyzerFactory @Inject constructor(
-    private val settings: KiwiAnalyzerSettings
-) : AnalyzerFactory {
+class KiwiAnalyzerProvider(
+    indexSettings: IndexSettings,
+    environment: Environment,
+    private val name: String,
+    settings: Settings
+) : AnalyzerProvider<KiwiAnalyzer> {
 
     private val analyzer: KiwiAnalyzer
 
     init {
-        val userDict = settings.userDictionary().takeIf { it.isNotEmpty() }
+        // Parse settings manually from Settings object
+        val modelPath = settings.get("model_path", "kiwi")
+        val numThreads = settings.getAsInt("num_threads", 0)
+        val discardPunctuation = settings.getAsBoolean("discard_punctuation", true)
+        val userDict = settings.get("user_dictionary")?.takeIf { it.isNotEmpty() }
 
         val kiwi = KiwiInstanceManager.getInstance(
-            modelPath = settings.modelPath(),
-            numThreads = settings.numThreads(),
+            modelPath = modelPath,
+            numThreads = numThreads,
             userDictionary = userDict
         )
 
-        val stopTags = settings.stopTags().takeIf { it.isNotEmpty() }?.toSet()
+        val stopTags = settings.getAsList("stop_tags")
+            .takeIf { it.isNotEmpty() }?.toSet()
             ?: POSTagSet.DEFAULT_STOP_TAGS
 
         analyzer = KiwiAnalyzer(
             kiwi = kiwi,
-            discardPunctuation = settings.discardPunctuation(),
+            discardPunctuation = discardPunctuation,
             posTagsToInclude = null,
             stopTags = stopTags,
             applyPosFilter = true,
@@ -65,13 +72,17 @@ class KiwiAnalyzerFactory @Inject constructor(
         )
     }
 
+    override fun name(): String = name
+
+    override fun scope(): AnalyzerScope = AnalyzerScope.INDEX
+
     /**
      * Get the analyzer instance.
      *
      * Returns the pre-configured KiwiAnalyzer instance.
      * Analyzers are thread-safe and can be shared.
      */
-    override fun create(): Analyzer {
+    override fun get(): KiwiAnalyzer {
         return analyzer
     }
 }

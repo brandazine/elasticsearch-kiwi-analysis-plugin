@@ -1,7 +1,6 @@
 ALL-UNNAMED:
   - load_native_libraries
   - files:
-      - path: "<<TEMP>>"
-        mode: read_write
-      - path: "<<CONFIG>>"
+      - relative_path: "."
+        relative_to: config
         mode: read

@@ -1,9 +1,20 @@
 package com.brandazine.elasticsearch.analysis.kiwi
 
+import org.apache.lucene.analysis.Analyzer
+import org.elasticsearch.common.settings.Settings
+import org.elasticsearch.env.Environment
+import org.elasticsearch.index.IndexSettings
+import org.elasticsearch.index.analysis.AnalyzerProvider
+import org.elasticsearch.index.analysis.TokenFilterFactory
+import org.elasticsearch.index.analysis.TokenizerFactory
+import org.elasticsearch.indices.analysis.AnalysisModule
+import org.elasticsearch.plugins.AnalysisPlugin
+import org.elasticsearch.plugins.Plugin
+
 /**
  * Elasticsearch plugin that provides Korean morphological analysis using Kiwi.
  *
- * This plugin registers the following analysis components via @NamedComponent annotations:
+ * This classic plugin registers the following analysis components:
  *
  * ## Tokenizer: "kiwi"
  * Morphological tokenizer using Kiwi analyzer.
@@ -15,7 +26,7 @@ package com.brandazine.elasticsearch.analysis.kiwi
  *
  * ## Analyzer: "kiwi"
  * Complete analyzer combining tokenizer + POS filter + lowercase.
- * @see KiwiAnalyzerFactory
+ * @see KiwiAnalyzerProvider
  *
  * ## Installation
  * 1. Download the appropriate platform-specific plugin ZIP
@@ -38,9 +49,30 @@ package com.brandazine.elasticsearch.analysis.kiwi
  *   }
  * }
  * ```
- *
- * Note: In the ES stable plugin API, components are auto-discovered via
- * @NamedComponent annotations. This class serves as documentation and
- * can be extended if additional plugin lifecycle hooks are needed.
  */
-class KiwiAnalysisPlugin
+class KiwiAnalysisPlugin : Plugin(), AnalysisPlugin {
+
+    override fun getTokenizers(): Map<String, AnalysisModule.AnalysisProvider<TokenizerFactory>> {
+        return mapOf(
+            "kiwi" to AnalysisModule.AnalysisProvider { indexSettings, env, name, settings ->
+                KiwiTokenizerFactory(indexSettings, env, name, settings)
+            }
+        )
+    }
+
+    override fun getTokenFilters(): Map<String, AnalysisModule.AnalysisProvider<TokenFilterFactory>> {
+        return mapOf(
+            "kiwi_part_of_speech" to AnalysisModule.AnalysisProvider { indexSettings, env, name, settings ->
+                KiwiPartOfSpeechFilterFactory(indexSettings, env, name, settings)
+            }
+        )
+    }
+
+    override fun getAnalyzers(): Map<String, AnalysisModule.AnalysisProvider<AnalyzerProvider<out Analyzer>>> {
+        return mapOf(
+            "kiwi" to AnalysisModule.AnalysisProvider { indexSettings, env, name, settings ->
+                KiwiAnalyzerProvider(indexSettings, env, name, settings)
+            }
+        )
+    }
+}

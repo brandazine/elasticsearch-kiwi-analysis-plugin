@@ -1,14 +1,15 @@
 package com.brandazine.elasticsearch.analysis.kiwi
 
 import org.apache.lucene.analysis.TokenStream
-import org.elasticsearch.plugin.Inject
-import org.elasticsearch.plugin.NamedComponent
-import org.elasticsearch.plugin.analysis.TokenFilterFactory
+import org.elasticsearch.common.settings.Settings
+import org.elasticsearch.env.Environment
+import org.elasticsearch.index.IndexSettings
+import org.elasticsearch.index.analysis.TokenFilterFactory
 
 /**
  * Factory for creating KiwiPartOfSpeechFilter instances.
  *
- * This factory is registered with Elasticsearch via the @NamedComponent annotation.
+ * This factory is registered with Elasticsearch via the classic plugin API.
  * When an index configuration specifies `"type": "kiwi_part_of_speech"` for a filter,
  * Elasticsearch will use this factory to create filter instances.
  *
@@ -35,21 +36,25 @@ import org.elasticsearch.plugin.analysis.TokenFilterFactory
  * }
  * ```
  */
-@NamedComponent("kiwi_part_of_speech")
-class KiwiPartOfSpeechFilterFactory @Inject constructor(
-    private val settings: KiwiPartOfSpeechSettings
+class KiwiPartOfSpeechFilterFactory(
+    indexSettings: IndexSettings,
+    environment: Environment,
+    private val name: String,
+    settings: Settings
 ) : TokenFilterFactory {
 
     private val stopTags: Set<String>
 
     init {
-        val configuredTags = settings.stopTags()
+        val configuredTags = settings.getAsList("stop_tags")
         stopTags = if (configuredTags.isNotEmpty()) {
             configuredTags.toSet()
         } else {
             POSTagSet.DEFAULT_STOP_TAGS
         }
     }
+
+    override fun name(): String = name
 
     /**
      * Create a new KiwiPartOfSpeechFilter instance.

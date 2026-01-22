@@ -1,0 +1,13 @@
+// Plugin security policy for analysis-kiwi
+// Grants native library loading permission for KiwiJava JNI
+
+grant {
+    // Native library loading for KiwiJava JNI
+    permission java.lang.RuntimePermission "loadLibrary.*";
+    permission java.lang.RuntimePermission "getClassLoader";
+    permission java.lang.RuntimePermission "accessDeclaredMembers";
+    permission java.lang.reflect.ReflectPermission "suppressAccessChecks";
+
+    // System properties for platform detection
+    permission java.util.PropertyPermission "*", "read";
+};

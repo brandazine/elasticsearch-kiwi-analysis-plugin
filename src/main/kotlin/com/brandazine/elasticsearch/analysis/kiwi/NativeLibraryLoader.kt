@@ -1,5 +1,8 @@
 package com.brandazine.elasticsearch.analysis.kiwi
 
+import org.elasticsearch.SpecialPermission
+import java.security.AccessController
+import java.security.PrivilegedAction
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.logging.Logger
 
@@ -9,6 +12,9 @@ import java.util.logging.Logger
  * KiwiJava bundles platform-specific native libraries inside the JAR file.
  * This loader ensures the native library is loaded exactly once before
  * any Kiwi operations are performed.
+ *
+ * Note: Uses Elasticsearch's SpecialPermission and AccessController.doPrivileged
+ * to allow native library loading under Elasticsearch's SecurityManager.
  */
 object NativeLibraryLoader {
 
@@ -22,6 +28,10 @@ object NativeLibraryLoader {
      * This method is thread-safe and idempotent - it will only attempt
      * to load the library once, even if called from multiple threads.
      *
+     * Uses Elasticsearch's SpecialPermission pattern followed by
+     * AccessController.doPrivileged to grant permissions defined
+     * in the plugin's security.policy file for native library loading.
+     *
      * @throws RuntimeException if the native library fails to load
      */
     @Synchronized
@@ -32,10 +42,23 @@ object NativeLibraryLoader {
         }
 
         try {
-            // KiwiJava uses JNI and loads its native library automatically
-            // when the Kiwi class is first accessed. We trigger this by
-            // loading the class explicitly.
-            Class.forName("kr.pe.bab2min.Kiwi")
+            // Check that caller has permission to perform privileged operations
+            // This is required by Elasticsearch's security model
+            @Suppress("DEPRECATION")
+            val sm = System.getSecurityManager()
+            if (sm != null) {
+                sm.checkPermission(SpecialPermission())
+            }
+
+            // Use AccessController.doPrivileged to allow native library loading
+            // under Elasticsearch's SecurityManager with our security.policy permissions
+            @Suppress("DEPRECATION")
+            AccessController.doPrivileged(PrivilegedAction {
+                // KiwiJava uses JNI and loads its native library automatically
+                // when the Kiwi class is first accessed. We trigger this by
+                // loading the class explicitly.
+                Class.forName("kr.pe.bab2min.Kiwi")
+            })
 
             logger.info("Kiwi native library loaded successfully")
             loaded.set(true)
@@ -55,6 +78,12 @@ object NativeLibraryLoader {
                 "KiwiJava classes not found. Ensure kiwi-java JAR is in the classpath.",
                 e
             )
+        } catch (e: Exception) {
+            // Catch any other exceptions (including those wrapped by doPrivileged)
+            loadError = e
+            val cause = if (e.cause != null) e.cause else e
+            logger.severe("Failed to load Kiwi: ${cause?.message}")
+            throw RuntimeException("Failed to load Kiwi native library", cause)
         }
     }
 
@@ -67,9 +96,17 @@ object NativeLibraryLoader {
      * Get platform information for debugging.
      */
     fun getPlatformInfo(): String {
-        val os = System.getProperty("os.name")
-        val arch = System.getProperty("os.arch")
-        val javaVersion = System.getProperty("java.version")
-        return "OS: $os, Arch: $arch, Java: $javaVersion"
+        @Suppress("DEPRECATION")
+        val sm = System.getSecurityManager()
+        if (sm != null) {
+            sm.checkPermission(SpecialPermission())
+        }
+        @Suppress("DEPRECATION")
+        return AccessController.doPrivileged(PrivilegedAction {
+            val os = System.getProperty("os.name")
+            val arch = System.getProperty("os.arch")
+            val javaVersion = System.getProperty("java.version")
+            "OS: $os, Arch: $arch, Java: $javaVersion"
+        })
     }
 }
