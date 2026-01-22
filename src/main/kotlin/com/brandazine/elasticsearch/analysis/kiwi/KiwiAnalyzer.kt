@@ -37,7 +37,7 @@ class KiwiAnalyzer(
      * @param fieldName The field being analyzed (not used, but required by Lucene API)
      * @return TokenStreamComponents containing the tokenizer and filter chain
      */
-    override fun createComponents(fieldName: String): TokenStreamComponents {
+    override fun createComponents(fieldName: String?): TokenStreamComponents {
         // Create the tokenizer
         val tokenizer: Tokenizer = KiwiTokenizer(
             kiwi = kiwi,
