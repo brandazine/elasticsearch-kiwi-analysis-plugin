@@ -27,16 +27,16 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v5
 
       - name: Get latest Kiwi release info
         id: kiwi-release
@@ -50,7 +50,7 @@ jobs:
 
       - name: Cache KiwiJava JAR
         id: cache-kiwi-jar
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: libs
           key: kiwi-jar-mac-arm64-${{ steps.kiwi-release.outputs.version }}
@@ -69,7 +69,7 @@ jobs:
 
       - name: Cache Kiwi model
         id: cache-kiwi-model
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: kiwi
           key: kiwi-model-base-${{ steps.kiwi-release.outputs.version }}
@@ -104,7 +104,7 @@ jobs:
         run: ./gradlew test
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: test-results
@@ -132,16 +132,16 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: ${{ startsWith(matrix.es-version, '9.') && '21' || '17' }}
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v5
 
       - name: Get latest Kiwi release info
         id: kiwi-release
@@ -155,7 +155,7 @@ jobs:
 
       - name: Cache KiwiJava JAR
         id: cache-kiwi-jar
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: libs
           key: kiwi-jar-${{ matrix.platform }}-${{ steps.kiwi-release.outputs.version }}
@@ -196,7 +196,7 @@ jobs:
         run: ls -la build/distributions/
 
       - name: Upload plugin artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: analysis-kiwi-es${{ matrix.es-version }}-${{ matrix.platform }}
           path: build/distributions/*.zip
@@ -207,9 +207,11 @@ jobs:
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: artifacts
           pattern: analysis-kiwi-es*
@@ -218,21 +220,35 @@ jobs:
       - name: List artifacts
         run: find artifacts -type f -name "*.zip"
 
-      - name: Get version from artifact
-        id: version
+      - name: Generate release tag
+        id: tag
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          ZIP_FILE=$(find artifacts -name "*.zip" | head -1)
-          VERSION=$(basename "$ZIP_FILE" | sed -E 's/analysis-kiwi-([^-]+(-SNAPSHOT)?).*/\1/')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Version: $VERSION"
+          DATE=$(date +%Y%m%d)
+          SHORT_SHA=${GITHUB_SHA::7}
 
-      # Uncomment to enable automatic releases
-      # - name: Create Release
-      #   uses: softprops/action-gh-release@v1
-      #   with:
-      #     tag_name: v${{ steps.version.outputs.version }}
-      #     name: Release ${{ steps.version.outputs.version }}
-      #     draft: true
-      #     files: artifacts/**/*.zip
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Get existing tags for today and find the highest number
+          EXISTING_TAGS=$(gh api repos/${{ github.repository }}/tags --jq '.[].name' | grep "^${DATE}-" | sort -r || true)
+
+          if [ -z "$EXISTING_TAGS" ]; then
+            NUM="01"
+          else
+            LAST_NUM=$(echo "$EXISTING_TAGS" | head -1 | sed -E "s/${DATE}-([0-9]+)\..*/\1/")
+            NEXT_NUM=$((10#$LAST_NUM + 1))
+            NUM=$(printf "%02d" $NEXT_NUM)
+          fi
+
+          TAG="${DATE}-${NUM}.${SHORT_SHA}"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Generated tag: $TAG"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: Release ${{ steps.tag.outputs.tag }}
+          generate_release_notes: true
+          files: artifacts/**/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
