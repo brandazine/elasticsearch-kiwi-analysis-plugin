@@ -97,7 +97,21 @@ class KiwiAnalyzerProvider(
             return if (file.isAbsolute) {
                 path
             } else {
-                environment.configFile().resolve(path).toAbsolutePath().toString()
+                getConfigPath(environment).resolve(path).toAbsolutePath().toString()
+            }
+        }
+
+        /**
+         * Gets the config directory path from Environment.
+         * ES 8.x uses configFile(), ES 9.x uses configDir().
+         */
+        private fun getConfigPath(environment: Environment): java.nio.file.Path {
+            return try {
+                // Try ES 9.x method first
+                environment.javaClass.getMethod("configDir").invoke(environment) as java.nio.file.Path
+            } catch (e: NoSuchMethodException) {
+                // Fall back to ES 8.x method
+                environment.javaClass.getMethod("configFile").invoke(environment) as java.nio.file.Path
             }
         }
     }
