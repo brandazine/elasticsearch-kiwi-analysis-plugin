@@ -47,10 +47,11 @@ class KiwiAnalyzerProvider(
 
     init {
         // Parse settings manually from Settings object
-        val modelPath = settings.get("model_path", "kiwi")
+        val modelPath = resolvePath(environment, settings.get("model_path", "kiwi"))
         val numThreads = settings.getAsInt("num_threads", 0)
         val discardPunctuation = settings.getAsBoolean("discard_punctuation", true)
         val userDict = settings.get("user_dictionary")?.takeIf { it.isNotEmpty() }
+            ?.let { resolvePath(environment, it) }
 
         val kiwi = KiwiInstanceManager.getInstance(
             modelPath = modelPath,
@@ -84,5 +85,20 @@ class KiwiAnalyzerProvider(
      */
     override fun get(): KiwiAnalyzer {
         return analyzer
+    }
+
+    companion object {
+        /**
+         * Resolves a path against the ES config directory if it's relative.
+         * Absolute paths are returned unchanged.
+         */
+        private fun resolvePath(environment: Environment, path: String): String {
+            val file = java.io.File(path)
+            return if (file.isAbsolute) {
+                path
+            } else {
+                environment.configFile().resolve(path).toAbsolutePath().toString()
+            }
+        }
     }
 }

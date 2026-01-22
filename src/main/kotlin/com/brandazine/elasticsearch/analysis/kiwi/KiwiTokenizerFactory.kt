@@ -45,10 +45,11 @@ class KiwiTokenizerFactory(
 
     init {
         // Parse settings manually from Settings object
-        val modelPath = settings.get("model_path", "kiwi")
+        val modelPath = resolvePath(environment, settings.get("model_path", "kiwi"))
         val numThreads = settings.getAsInt("num_threads", 0)
         discardPunctuation = settings.getAsBoolean("discard_punctuation", true)
         val userDict = settings.get("user_dictionary")?.takeIf { it.isNotEmpty() }
+            ?.let { resolvePath(environment, it) }
         posTagsToInclude = settings.getAsList("pos_tags_to_include")
             .takeIf { it.isNotEmpty() }?.toSet()
 
@@ -58,6 +59,21 @@ class KiwiTokenizerFactory(
             numThreads = numThreads,
             userDictionary = userDict
         )
+    }
+
+    companion object {
+        /**
+         * Resolves a path against the ES config directory if it's relative.
+         * Absolute paths are returned unchanged.
+         */
+        private fun resolvePath(environment: Environment, path: String): String {
+            val file = java.io.File(path)
+            return if (file.isAbsolute) {
+                path
+            } else {
+                environment.configFile().resolve(path).toAbsolutePath().toString()
+            }
+        }
     }
 
     override fun name(): String = name
