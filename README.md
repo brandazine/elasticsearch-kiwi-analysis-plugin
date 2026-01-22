@@ -122,7 +122,7 @@ PUT /korean_index
 
 ```
 # 형식: 단어<TAB>품사<TAB>점수 (점수 생략 가능)
-브랜다진	NNP	0.0
+브랜더진	NNP	0.0
 딥러닝	NNG	0.0
 ChatGPT	SL	0.0
 삼성전자	NNP	0.0
@@ -142,7 +142,7 @@ ChatGPT	SL	0.0
 }
 ```
 
-### Test with _analyze API
+### Test with \_analyze API
 
 ```bash
 POST /_analyze
@@ -153,6 +153,7 @@ POST /_analyze
 ```
 
 결과:
+
 ```json
 {
   "tokens": [
@@ -171,78 +172,78 @@ POST /_analyze
 
 ### Tokenizer (`type: "kiwi"`)
 
-| Setting | Type | Default | Description |
-|---------|------|---------|-------------|
-| `model_path` | string | `"kiwi"` | Kiwi 모델 디렉토리 경로 |
-| `num_threads` | int | `0` | 워커 스레드 수 (0 = 자동 감지) |
-| `discard_punctuation` | bool | `true` | 구두점 토큰 제거 |
-| `user_dictionary` | string | `""` | 사용자 정의 사전 파일 경로 |
-| `pos_tags_to_include` | list | `[]` | 포함할 품사 태그 (빈 리스트 = 전체 포함) |
+| Setting               | Type   | Default  | Description                              |
+| --------------------- | ------ | -------- | ---------------------------------------- |
+| `model_path`          | string | `"kiwi"` | Kiwi 모델 디렉토리 경로                  |
+| `num_threads`         | int    | `0`      | 워커 스레드 수 (0 = 자동 감지)           |
+| `discard_punctuation` | bool   | `true`   | 구두점 토큰 제거                         |
+| `user_dictionary`     | string | `""`     | 사용자 정의 사전 파일 경로               |
+| `pos_tags_to_include` | list   | `[]`     | 포함할 품사 태그 (빈 리스트 = 전체 포함) |
 
 ### Token Filter (`type: "kiwi_part_of_speech"`)
 
-| Setting | Type | Default | Description |
-|---------|------|---------|-------------|
-| `stop_tags` | list | `[]` | 제거할 품사 태그 |
+| Setting     | Type | Default | Description      |
+| ----------- | ---- | ------- | ---------------- |
+| `stop_tags` | list | `[]`    | 제거할 품사 태그 |
 
 ### Analyzer (`type: "kiwi"`)
 
-| Setting | Type | Default | Description |
-|---------|------|---------|-------------|
-| `model_path` | string | `"kiwi"` | Kiwi 모델 디렉토리 경로 |
-| `num_threads` | int | `0` | 워커 스레드 수 |
-| `discard_punctuation` | bool | `true` | 구두점 제거 |
-| `user_dictionary` | string | `""` | 사용자 정의 사전 경로 |
-| `stop_tags` | list | `[]` | 제거할 품사 태그 |
+| Setting               | Type   | Default  | Description             |
+| --------------------- | ------ | -------- | ----------------------- |
+| `model_path`          | string | `"kiwi"` | Kiwi 모델 디렉토리 경로 |
+| `num_threads`         | int    | `0`      | 워커 스레드 수          |
+| `discard_punctuation` | bool   | `true`   | 구두점 제거             |
+| `user_dictionary`     | string | `""`     | 사용자 정의 사전 경로   |
+| `stop_tags`           | list   | `[]`     | 제거할 품사 태그        |
 
 ## Korean POS Tags
 
 주요 품사 태그:
 
-| Tag | Description | Example |
-|-----|-------------|---------|
-| NNG | 일반 명사 | 학교, 사람 |
-| NNP | 고유 명사 | 서울, 삼성 |
-| NNB | 의존 명사 | 것, 수 |
-| NR | 수사 | 하나, 둘 |
-| NP | 대명사 | 나, 너 |
-| VV | 동사 | 가다, 먹다 |
-| VA | 형용사 | 크다, 작다 |
-| VX | 보조 용언 | 하다, 되다 |
-| VCP | 긍정 지정사 | 이다 |
-| VCN | 부정 지정사 | 아니다 |
-| MM | 관형사 | 이, 그, 저 |
-| MAG | 일반 부사 | 매우, 빨리 |
-| MAJ | 접속 부사 | 그러나, 하지만 |
-| IC | 감탄사 | 아, 와 |
-| JKS | 주격 조사 | 이/가 |
-| JKC | 보격 조사 | 이/가 |
-| JKG | 관형격 조사 | 의 |
-| JKO | 목적격 조사 | 을/를 |
-| JKB | 부사격 조사 | 에, 에서 |
-| JKV | 호격 조사 | 아/야 |
-| JKQ | 인용격 조사 | 라고 |
-| JX | 보조사 | 은/는, 도 |
-| JC | 접속 조사 | 와/과 |
-| EP | 선어말 어미 | 시, 었 |
-| EF | 종결 어미 | 다, 요 |
-| EC | 연결 어미 | 고, 며 |
-| ETN | 명사형 전성 어미 | 기, 음 |
-| ETM | 관형형 전성 어미 | 는, 은 |
-| XPN | 체언 접두사 | 풋, 첫 |
-| XSN | 명사 파생 접미사 | 님, 적 |
-| XSV | 동사 파생 접미사 | 하, 되 |
-| XSA | 형용사 파생 접미사 | 스럽, 답 |
-| XR | 어근 | - |
-| SF | 마침표/물음표/느낌표 | . ? ! |
-| SP | 쉼표/가운뎃점/콜론/빗금 | , · : / |
-| SS | 따옴표/괄호/줄표 | " ' ( ) - |
-| SE | 줄임표 | … |
-| SO | 붙임표 | ~ |
-| SW | 기타 기호 | - |
-| SL | 외국어 | hello |
-| SH | 한자 | 漢字 |
-| SN | 숫자 | 123 |
+| Tag | Description             | Example        |
+| --- | ----------------------- | -------------- |
+| NNG | 일반 명사               | 학교, 사람     |
+| NNP | 고유 명사               | 서울, 삼성     |
+| NNB | 의존 명사               | 것, 수         |
+| NR  | 수사                    | 하나, 둘       |
+| NP  | 대명사                  | 나, 너         |
+| VV  | 동사                    | 가다, 먹다     |
+| VA  | 형용사                  | 크다, 작다     |
+| VX  | 보조 용언               | 하다, 되다     |
+| VCP | 긍정 지정사             | 이다           |
+| VCN | 부정 지정사             | 아니다         |
+| MM  | 관형사                  | 이, 그, 저     |
+| MAG | 일반 부사               | 매우, 빨리     |
+| MAJ | 접속 부사               | 그러나, 하지만 |
+| IC  | 감탄사                  | 아, 와         |
+| JKS | 주격 조사               | 이/가          |
+| JKC | 보격 조사               | 이/가          |
+| JKG | 관형격 조사             | 의             |
+| JKO | 목적격 조사             | 을/를          |
+| JKB | 부사격 조사             | 에, 에서       |
+| JKV | 호격 조사               | 아/야          |
+| JKQ | 인용격 조사             | 라고           |
+| JX  | 보조사                  | 은/는, 도      |
+| JC  | 접속 조사               | 와/과          |
+| EP  | 선어말 어미             | 시, 었         |
+| EF  | 종결 어미               | 다, 요         |
+| EC  | 연결 어미               | 고, 며         |
+| ETN | 명사형 전성 어미        | 기, 음         |
+| ETM | 관형형 전성 어미        | 는, 은         |
+| XPN | 체언 접두사             | 풋, 첫         |
+| XSN | 명사 파생 접미사        | 님, 적         |
+| XSV | 동사 파생 접미사        | 하, 되         |
+| XSA | 형용사 파생 접미사      | 스럽, 답       |
+| XR  | 어근                    | -              |
+| SF  | 마침표/물음표/느낌표    | . ? !          |
+| SP  | 쉼표/가운뎃점/콜론/빗금 | , · : /        |
+| SS  | 따옴표/괄호/줄표        | " ' ( ) -      |
+| SE  | 줄임표                  | …              |
+| SO  | 붙임표                  | ~              |
+| SW  | 기타 기호               | -              |
+| SL  | 외국어                  | hello          |
+| SH  | 한자                    | 漢字           |
+| SN  | 숫자                    | 123            |
 
 ## Development
 
@@ -299,16 +300,18 @@ docker run -d --name kiwi-es9 --platform linux/arm64 \
 
 ## Supported Platforms
 
-| Platform | JAR Suffix | Build Artifact |
-|----------|------------|----------------|
-| Linux x64 | `lnx-x86-64` | `analysis-kiwi-*-lnx-x86-64.zip` |
-| Linux ARM64 | `lnx-aarch64` | `analysis-kiwi-*-lnx-aarch64.zip` |
-| macOS Apple Silicon | `mac-arm64` | `analysis-kiwi-*-mac-arm64.zip` |
-| Windows x64 | `win-x64` | `analysis-kiwi-*-win-x64.zip` |
+| Platform            | JAR Suffix    | Build Artifact                    |
+| ------------------- | ------------- | --------------------------------- |
+| Linux x64           | `lnx-x86-64`  | `analysis-kiwi-*-lnx-x86-64.zip`  |
+| Linux ARM64         | `lnx-aarch64` | `analysis-kiwi-*-lnx-aarch64.zip` |
+| macOS Apple Silicon | `mac-arm64`   | `analysis-kiwi-*-mac-arm64.zip`   |
+| Windows x64         | `win-x64`     | `analysis-kiwi-*-win-x64.zip`     |
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Copyright (c) 2025 Brandazine (dev@brandazine.kr)
 
 Kiwi library is licensed under LGPL v3. See [Kiwi repository](https://github.com/bab2min/Kiwi) for details.
 
