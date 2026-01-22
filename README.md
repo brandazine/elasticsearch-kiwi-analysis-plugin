@@ -8,7 +8,7 @@ Elasticsearch 한국어 형태소 분석 플러그인. [Kiwi](https://github.com
 - **사용자 정의 사전**: 커스텀 단어/품사 추가 지원
 - **품사 필터링**: 특정 품사만 포함하거나 제외
 - **멀티 플랫폼**: Linux, macOS, Windows 지원
-- **Elasticsearch 8.x / 9.x 호환**: Stable Plugin API 사용
+- **Elasticsearch 8.x / 9.x 호환**: Classic Plugin API 사용
 
 ## Installation
 
@@ -277,6 +277,24 @@ KIWI_MODEL_PATH=$(pwd)/kiwi/base ./gradlew test
 
 ```bash
 make download-version VERSION=v0.22.2
+```
+
+### Docker Testing
+
+```bash
+# Build for Linux x86-64 (ES 8.x)
+ES_VERSION=8.12.0 KIWI_PLATFORM=lnx-x86-64 ./gradlew bundlePlugin -x test
+docker build --platform linux/amd64 --build-arg ES_VERSION=8.12.0 -f Dockerfile.test -t kiwi-es8-test .
+docker run -d --name kiwi-es8 --platform linux/amd64 \
+  -e "discovery.type=single-node" -e "xpack.security.enabled=false" \
+  -p 9200:9200 kiwi-es8-test
+
+# Build for Linux ARM64 (ES 9.x on Apple Silicon)
+ES_VERSION=9.2.2 KIWI_PLATFORM=lnx-aarch64 ./gradlew bundlePlugin -x test
+docker build --platform linux/arm64 --build-arg ES_VERSION=9.2.2 -f Dockerfile.test -t kiwi-es9-test .
+docker run -d --name kiwi-es9 --platform linux/arm64 \
+  -e "discovery.type=single-node" -e "xpack.security.enabled=false" \
+  -p 9201:9200 kiwi-es9-test
 ```
 
 ## Supported Platforms
